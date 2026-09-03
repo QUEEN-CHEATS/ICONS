@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF Assets API</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(30, 41, 59, 0.4);
+            --card-hover: rgba(30, 41, 59, 0.8);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #0ea5e9;
+            --accent-hover: #38bdf8;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes slideInDown {
+            0% { opacity: 0; transform: translateY(-30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Viewer Mode */
+        body.viewer-mode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+        }
+        
+        .viewer-image {
+            max-width: 100%;
+            max-height: 100vh;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+        }
+
+        /* Gallery */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: slideInDown 0.6s ease-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(to right, #38bdf8, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            animation: slideInDown 0.8s ease-out;
+        }
+
+        .tab-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.6rem 1.5rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: rgba(14, 165, 233, 0.1);
+            border-color: var(--accent);
+            color: var(--accent-hover);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.2);
+        }
+
+        /* Search */
+        .search-bar {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto 2rem auto;
+            animation: slideInDown 1s ease-out;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            animation: fadeInScale 0.5s ease-out backwards;
+        }
+
+        .card:hover {
+            transform: translateY(-5px) scale(1.05);
+            background: var(--card-hover);
+            border-color: var(--accent);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5), 0 0 15px rgba(14, 165, 233, 0.3);
+            z-index: 10;
+        }
+
+        .card-img-wrapper {
+            width: 100%;
+            aspect-ratio: 1; /* Square for icons/characters */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.2);
+        }
+        
+        .tab-Banners .card-img-wrapper {
+            aspect-ratio: 16/7; /* Rectangular for banners */
+            padding: 0;
+        }
+
+        .card img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        
+        .tab-Banners .card img {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        .card-info {
+            padding: 0.8rem;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .item-id {
+            font-size: 0.75rem;
+            font-family: monospace;
+            color: #e2e8f0;
+            word-break: break-all;
+        }
+
+        /* Modal / Lightbox */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            position: relative;
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: white;
+        }
+
+        .modal img {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-id {
+            font-size: 1.2rem;
+            font-family: monospace;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.05);
+            color: white;
+            border: 1px solid var(--border);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #10b981;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 3000;
+            font-weight: 600;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Viewer Mode -->
+    <div id="viewer" style="display: none;">
+        <img id="viewer-img" class="viewer-image" src="" alt="Asset" onerror="this.src='banner/900000014.png'">
+    </div>
+
+    <!-- Gallery -->
+    <div id="gallery" class="container" style="display: none;">
+        <header>
+            <h1>FF Assets API</h1>
+            <p class="desc">Banners, Characters, and Icons</p>
+        </header>
+
+        <div class="tabs" id="tabsContainer">
+            <!-- Tabs generated by JS -->
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search by ID..." onkeyup="filterItems()">
+        </div>
+
+        <div class="grid" id="assetGrid">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div id="modal" class="modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="close-btn" onclick="closeModal(event, true)">&times;</span>
+            <img id="modal-img" src="" alt="Preview">
+            <div class="modal-id" id="modal-id">123456</div>
+            <div class="action-btns">
+                <button class="btn btn-primary" onclick="copyId()">Copy ID</button>
+                <button class="btn" onclick="openUrl()">View Raw</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">ID Copied!</div>
+
+    <script>
+        const db = {"Banners": ["900000014.png", "901000001.png", "901000002.png", "901000003.png", "901000004.png", "901000005.png", "901000006.png", "901000007.png", "901000008.png", "901000009.png", "901000010.png", "901000011.png", "901000012.png", "901000013.png", "901000014.png", "901000015.png", "901000016.png", "901000017.png", "901000018.png", "901000019.png", "901000020.png", "901000021.png", "901000022.png", "901000023.png", "901000024.png", "901000025.png", "901000026.png", "901000027.png", "901000028.png", "901000029.png", "901000030.png", "901000031.png", "901000032.png", "901000033.png", "901000034.png", "901000035.png", "901000036.png", "901000037.png", "901000038.png", "901000039.png", "901000040.png", "901000041.png", "901000042.png", "901000043.png", "901000044.png", "901000045.png", "901000046.png", "901000047.png", "901000048.png", "901000049.png", "901000050.png", "901000051.png", "901000052.png", "901000053.png", "901000054.png", "901000055.png", "901000056.png", "901000057.png", "901000058.png", "901000059.png", "901000060.png", "901000061.png", "901000062.png", "901000063.png", "901000064.png", "901000065.png", "901000066.png", "901000067.png", "901000068.png", "901000069.png", "901000070.png", "901000071.png", "901000072.png", "901000073.png", "901000074.png", "901000075.png", "901000076.png", "901000077.png", "901000078.png", "901000079.png", "901000080.png", "901000081.png", "901000082.png", "901000083.png", "901000084.png", "901000085.png", "901000086.png", "901000087.png", "901000088.png", "901000089.png", "901000090.png", "901000091.png", "901000092.png", "901000093.png", "901000094.png", "901000095.png", "901000096.png", "901000097.png", "901000098.png", "901000099.png", "901000100.png", "901000101.png", "901000102.png", "901000103.png", "901000104.png", "901000105.png", "901000106.png", "901000107.png", "901000108.png", "901000109.png", "901000110.png", "901000111.png", "901000112.png", "901000113.png", "901000114.png", "901000115.png", "901000116.png", "901000117.png", "901000118.png", "901000119.png", "901000120.png", "901000121.png", "901000122.png", "901000123.png", "901000124.png", "901000125.png", "901000126.png", "901000127.png", "901000128.png", "901000129.png", "901000130.png", "901000131.png", "901000132.png", "901000133.png", "901000134.png", "901000135.png", "901000136.png", "901000137.png", "901000138.png", "901000139.png", "901000140.png", "901000141.png", "901000142.png", "901000143.png", "901000144.png", "901000145.png", "901000146.png", "901000147.png", "901000148.png", "901000149.png", "901000150.png", "901000151.png", "901000152.png", "901000153.png", "901000154.png", "901000155.png", "901000156.png", "901000157.png", "901000158.png", "901000159.png", "901000160.png", "901000161.png", "901000162.png", "901000163.png", "901000164.png", "901000165.png", "901000166.png", "901000167.png", "901000168.png", "901000169.png", "901000170.png", "901000171.png", "901000172.png", "901000173.png", "901000174.png", "901000175.png", "901000176.png", "901000177.png", "901000178.png", "901000179.png", "901000180.png", "901000181.png", "901000182.png", "901000183.png", "901000184.png", "901000185.png", "901000186.png", "901000187.png", "901000188.png", "901000189.png", "901000190.png", "901000191.png", "901000193.png", "901000194.png", "901000195.png", "901000196.png", "901000197.png", "901000198.png", "901000199.png", "901000200.png", "901000201.png", "901000202.png", "901000203.png", "901000204.png", "901000205.png", "901000206.png", "901000207.png", "901000208.png", "901000209.png", "901000210.png", "901000211.png", "901000212.png", "901000213.png", "901000214.png", "901000215.png", "901000216.png", "901000217.png", "901000218.png", "901000219.png", "901000220.png", "901000221.png", "901000222.png", "901000223.png", "901000224.png", "901000225.png", "901000226.png", "901000227.png", "901000228.png", "901000229.png", "901000230.png", "901000231.png", "901000232.png", "901000233.png", "901000234.png", "901000235.png", "901000236.png", "901000237.png", "901000238.png", "901000239.png", "901000240.png", "901000241.png", "901000242.png", "901000243.png", "901000244.png", "901000245.png", "901000246.png", "901000247.png", "901000248.png", "901000249.png", "901000250.png", "901000251.png", "901000252.png", "901000253.png", "901000254.png", "901000255.png", "901000256.png", "901000257.png", "901000258.png", "901000259.png", "901000260.png", "901000261.png", "901000262.png", "901000263.png", "901000264.png", "901000265.png", "901000266.png", "901000267.png", "901000268.png", "901000269.png", "901000270.png", "901000271.png", "901000272.png", "901000273.png", "901000274.png", "901000275.png", "901000276.png", "901000277.png", "901000278.png", "901000279.png", "901000280.png", "901000281.png", "901000282.png", "901000283.png", "901000284.png", "901000285.png", "901000286.png", "901000287.png", "901000288.png", "901000289.png", "901000290.png", "901000291.png", "901000292.png", "901000293.png", "901000294.png", "901000295.png", "901000296.png", "901000297.png", "901000298.png", "901000299.png", "901000300.png", "901000301.png", "901000302.png", "901000303.png", "901000304.png", "901000305.png", "901000306.png", "901000307.png", "901000308.png", "901000309.png", "901000310.png", "901000311.png", "901000312.png", "901000313.png", "901000314.png", "901000315.png", "901000316.png", "901000317.png", "901000318.png", "901000319.png", "901000320.png", "901000321.png", "901000322.png", "901000323.png", "901000324.png", "901000325.png", "901000326.png", "901000327.png", "901000328.png", "901000329.png", "901000330.png", "901000331.png", "901000332.png", "901000333.png", "901000334.png", "901000335.png", "901000336.png", "901000337.png", "901000338.png", "901000339.png", "901000340.png", "901000341.png", "901000342.png", "901000343.png", "901000344.png", "901000345.png", "901000346.png", "901000347.png", "901000348.png", "901000349.png", "901026001.png", "901026002.png", "901026003.png", "901026004.png", "901026005.png", "901026006.png", "901026007.png", "901026008.png", "901026009.png", "901026010.png", "901026011.png", "901026012.png", "901026013.png", "901026014.png", "901026015.png", "901026016.png", "901026017.png", "901026018.png", "901026019.png", "901026020.png", "901026021.png", "901026022.png", "901027001.png", "901027002.png", "901027003.png", "901027004.png", "901027005.png", "901027006.png", "901027007.png", "901027008.png", "901027009.png", "901027010.png", "901027011.png", "901027012.png", "901027013.png", "901027014.png", "901027015.png", "901027016.png", "901027017.png", "901027018.png", "901027019.png", "901027020.png", "901027021.png", "901027022.png", "901027023.png", "901027024.png", "901027025.png", "901027026.png", "901027027.png", "901027028.png", "901027029.png", "901027030.png", "901027031.png", "901027032.png", "901027033.png", "901027034.png", "901027035.png", "901028001.png", "901028002.png", "901028003.png", "901028004.png", "901028005.png", "901028006.png", "901028007.png", "901028008.png", "901028009.png", "901028010.png", "901028011.png", "901028012.png", "901028013.png", "901028014.png", "901028015.png", "901028016.png", "901028017.png", "901028018.png", "901028019.png", "901028020.png", "901028021.png", "901028022.png", "901028023.png", "901028024.png", "901029001.png", "901029002.png", "901029003.png", "901029004.png", "901029005.png", "901029006.png", "901029007.png", "901029008.png", "901029009.png", "901029010.png", "901029011.png", "901029012.png", "901029013.png", "901029014.png", "901029015.png", "901029016.png", "901029017.png", "901029018.png", "901029019.png", "901029020.png", "901029021.png", "901029022.png", "901029023.png", "901030001.png", "901030002.png", "901030003.png", "901030004.png", "901030005.png", "901030006.png", "901030007.png", "901030008.png", "901030009.png", "901030010.png", "901030011.png", "901030012.png", "901030013.png", "901030014.png", "901030015.png", "901030016.png", "901030017.png", "901030018.png", "901030019.png", "901030020.png", "901030021.png", "901030022.png", "901030023.png", "901030024.png", "901031001.png", "901031002.png", "901031003.png", "901031004.png", "901031005.png", "901031006.png", "901031007.png", "901031008.png", "901031009.png", "901031010.png", "901031011.png", "901031012.png", "901031013.png", "901031014.png", "901031015.png", "901031016.png", "901031017.png", "901031018.png", "901031019.png", "901031020.png", "901031021.png", "901031022.png", "901031023.png", "901031024.png", "901031025.png", "901031026.png", "901031027.png", "901031028.png", "901031029.png", "901031030.png", "901031031.png", "901031032.png", "901032001.png", "901032002.png", "901032003.png", "901032004.png", "901032005.png", "901032006.png", "901032008.png", "901032009.png", "901032010.png", "901032011.png", "901032012.png", "901032013.png", "901032014.png", "901032015.png", "901032016.png", "901032017.png", "901032018.png", "901032019.png", "901032020.png", "901032021.png", "901032022.png", "901032023.png", "901032024.png", "901032025.png", "901032026.png", "901032027.png", "901032028.png", "901032029.png", "901033001.png", "901033002.png", "901033003.png", "901033004.png", "901033005.png", "901033006.png", "901033007.png", "901033009.png", "901033010.png", "901033011.png", "901033012.png", "901033013.png", "901033014.png", "901033015.png", "901033016.png", "901033017.png", "901033018.png", "901033019.png", "901033020.png", "901033021.png", "901033022.png", "901033023.png", "901033024.png", "901033025.png", "901033026.png", "901033027.png", "901033028.png", "901033029.png", "901033030.png", "901033031.png", "901033032.png", "901033033.png", "901033034.png", "901033035.png", "901033036.png", "901033037.png", "901033038.png", "901033039.png", "901033040.png", "901033041.png", "901033042.png", "901033043.png", "901034001.png", "901034002.png", "901034003.png", "901034004.png", "901034005.png", "901034006.png", "901034007.png", "901034008.png", "901034009.png", "901034010.png", "901034011.png", "901034012.png", "901034013.png", "901034014.png", "901034015.png", "901034016.png", "901034017.png", "901034018.png", "901034019.png", "901034020.png", "901034021.png", "901034022.png", "901034023.png", "901034024.png", "901034025.png", "901034026.png", "901034027.png", "901034028.png", "901034029.png", "901034030.png", "901034031.png", "901034032.png", "901034033.png", "901034034.png", "901034035.png", "901034036.png", "901034037.png", "901034038.png", "901034039.png", "901034040.png", "901035001.png", "901035002.png", "901035003.png", "901035004.png", "901035005.png", "901035006.png", "901035007.png", "901035008.png", "901035009.png", "901035010.png", "901035011.png", "901035012.png", "901035013.png", "901035014.png", "901035015.png", "901035016.png", "901035017.png", "901035018.png", "901035019.png", "901035020.png", "901035021.png", "901035022.png", "901035023.png", "901035024.png", "901036001.png", "901036002.png", "901036003.png", "901036004.png", "901036005.png", "901036006.png", "901036007.png", "901036008.png", "901036009.png", "901036010.png", "901036011.png", "901036012.png", "901036013.png", "901036014.png", "901036015.png", "901036016.png", "901036017.png", "901036018.png", "901036019.png", "901036020.png", "901036021.png", "901036022.png", "901036023.png", "901036024.png", "901036025.png", "901036026.png", "901036027.png", "901036028.png", "901036029.png", "901036030.png", "901036031.png", "901036032.png", "901036033.png", "901036034.png", "901036035.png", "901036036.png", "901037001.png", "901037002.png", "901037003.png", "901037004.png", "901037005.png", "901037006.png", "901037007.png", "901037008.png", "901037009.png", "901037010.png", "901037011.png", "901037012.png", "901037013.png", "901037014.png", "901037015.png", "901037016.png", "901037017.png", "901037019.png", "901037020.png", "901037021.png", "901038001.png", "901038002.png", "901038003.png", "901038004.png", "901038005.png", "901038006.png", "901038012.png", "901038013.png", "901038014.png", "901038015.png", "901038016.png", "901038017.png", "901038018.png", "901038019.png", "901038020.png", "901038021.png", "901038022.png", "901038023.png", "901038024.png", "901038025.png", "901038026.png", "901038028.png", "901038029.png", "901038030.png", "901038031.png", "901038032.png", "901038034.png", "901039001.png", "901039002.png", "901039003.png", "901039004.png", "901039005.png", "901039006.png", "901039007.png", "901039008.png", "901039009.png", "901039010.png", "901039011.png", "901039012.png", "901039013.png", "901039014.png", "901039015.png", "901039017.png", "901039018.png", "901039019.png", "901039020.png", "901039021.png", "901039022.png", "901039023.png", "901039024.png", "901039025.png", "901039026.png", "901039027.png", "901039028.png", "901040001.png", "901040002.png", "901040003.png", "901040004.png", "901040005.png", "901040006.png", "901040007.png", "901040008.png", "901040009.png", "901040010.png", "901040011.png", "901040012.png", "901040013.png", "901040014.png", "901040015.png", "901040016.png", "901040017.png", "901040018.png", "901040019.png", "901040020.png", "901040021.png", "901040022.png", "901040023.png", "901040025.png", "901040026.png", "901040027.png", "901040028.png", "901040029.png", "901040030.png", "901040031.png", "901040032.png", "901040033.png", "901040034.png", "901041001.png", "901041023.png", "901042001.png", "901042002.png", "901042003.png", "901042004.png", "901042005.png", "901042006.png", "901042007.png", "901042008.png", "901042009.png", "901042010.png", "901042011.png", "901042012.png", "901042013.png", "901042014.png", "901042015.png", "901042016.png", "901042017.png", "901042018.png", "901042019.png", "901043002.png", "901043004.png", "901043006.png", "901043007.png", "901043008.png", "901043009.png", "901043010.png", "901043011.png", "901043012.png", "901043013.png", "901043014.png", "901043015.png", "901044001.png", "901044002.png", "901044003.png", "901044004.png", "901044005.png", "901044006.png", "901044007.png", "901044008.png", "901044009.png", "901045001.png", "901045002.png", "901045003.png", "901045004.png", "901045005.png", "901045006.png", "901045007.png", "901045008.png", "901045009.png", "901045010.png", "901045011.png", "901045012.png", "901045013.png", "901045014.png", "901046001.png", "901046002.png", "901046003.png", "901046004.png", "901046005.png", "901046006.png", "901046007.png", "901046008.png", "901046009.png", "901046010.png", "901046011.png", "901046012.png", "901046013.png", "901046014.png", "901046015.png", "901046016.png", "901046017.png", "901046018.png", "901047001.png", "901047002.png", "901047003.png", "901047004.png", "901047005.png", "901047006.png", "901047007.png", "901047008.png", "901047009.png", "901047010.png", "901047011.png", "901047012.png", "901048001.png", "901048002.png", "901048003.png", "901048004.png", "901048005.png", "901048007.png", "901048008.png", "901048009.png", "901048010.png", "901048011.png", "901048012.png", "901048013.png", "901048014.png", "901048015.png", "901048016.png", "901048017.png", "901048018.png", "901048019.png", "902000005.png"], "Characters": [], "Icons": []};
+        const folders = {"Banners": "banner", "Characters": "character", "Icons": "icons"};
+        
+        let currentTab = "Banners";
+        let currentModalId = "";
+        let currentModalFolder = "";
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        // Viewer logic: check ?banner= id, ?character= id, ?icon= id, or ?id= (defaults to banner)
+        let requestedId = null;
+        let requestedFolder = "";
+        
+        if(urlParams.get('banner') || urlParams.get('id')) {
+            requestedId = urlParams.get('banner') || urlParams.get('id');
+            requestedFolder = "banner";
+        } else if (urlParams.get('character')) {
+            requestedId = urlParams.get('character');
+            requestedFolder = "character";
+        } else if (urlParams.get('icon')) {
+            requestedId = urlParams.get('icon');
+            requestedFolder = "icons";
+        }
+        
+        if (requestedId) {
+            document.body.classList.add('viewer-mode');
+            document.getElementById('viewer').style.display = 'block';
+            if (!requestedId.endsWith('.png') && !requestedId.endsWith('.jpg')) {
+                requestedId += '.png'; // assuming png as default fallback
+            }
+            document.getElementById('viewer-img').src = requestedFolder + '/' + requestedId;
+        } else {
+            document.getElementById('gallery').style.display = 'block';
+            initTabs();
+            renderGrid(db[currentTab]);
+        }
+
+        function initTabs() {
+            const container = document.getElementById('tabsContainer');
+            Object.keys(db).forEach(tab => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${tab === currentTab ? 'active' : ''}`;
+                btn.innerText = `${tab} (${db[tab].length})`;
+                btn.onclick = () => switchTab(tab);
+                container.appendChild(btn);
+            });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.innerText.startsWith(tab)) btn.classList.add('active');
+            });
+            
+            const grid = document.getElementById('assetGrid');
+            grid.className = `grid tab-${tab}`; // For conditional styling
+            
+            document.getElementById('searchInput').value = "";
+            renderGrid(db[tab]);
+        }
+
+        function renderGrid(items) {
+            const grid = document.getElementById('assetGrid');
+            grid.innerHTML = '';
+            
+            const folder = folders[currentTab];
+            
+            items.forEach((file, index) => {
+                const id = file.split('.')[0]; // remove extension
+                const card = document.createElement('div');
+                card.className = 'card';
+                // stagger animation delay
+                card.style.animationDelay = `${(index % 20) * 0.05}s`;
+                card.onclick = () => openModal(id, file, folder);
+                
+                card.innerHTML = `
+                    <div class="card-img-wrapper">
+                        <img src="${folder}/${file}" alt="${id}" loading="lazy">
+                    </div>
+                    <div class="card-info">
+                        <span class="item-id">${id}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterItems() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const items = db[currentTab];
+            const filtered = items.filter(b => b.toLowerCase().includes(search));
+            renderGrid(filtered);
+        }
+
+        function openModal(id, file, folder) {
+            currentModalId = id;
+            currentModalFolder = folder;
+            
+            document.getElementById('modal-img').src = `${folder}/${file}`;
+            document.getElementById('modal-id').innerText = id;
+            
+            const modal = document.getElementById('modal');
+            modal.style.display = 'flex';
+            // small delay to trigger transition
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeModal(e, force=false) {
+            if (force || e.target.id === 'modal') {
+                const modal = document.getElementById('modal');
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        }
+
+        function copyId() {
+            navigator.clipboard.writeText(currentModalId).then(() => {
+                showToast(`ID ${currentModalId} Copied!`);
+            });
+        }
+        
+        function openUrl() {
+            const baseUrl = window.location.href.split('?')[0];
+            let param = "id";
+            if(currentTab === "Characters") param = "character";
+            if(currentTab === "Icons") param = "icon";
+            
+            const fullUrl = `${baseUrl}?${param}=${currentModalId}`;
+            window.open(fullUrl, '_blank');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
