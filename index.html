@@ -418,7 +418,7 @@
                     <path d="M12 2a10 10 0 0 1 10 10"></path>
                 </svg>
                 <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
-                Fetching assets from GitHub...
+                Fetching assets from Server...
             </div>
         </div>
     </div>
@@ -499,8 +499,8 @@
                 console.error("GitHub API fetch failed", err);
                 document.getElementById('assetGrid').innerHTML = `
                     <div class="loading" style="color: #ef4444;">
-                        Failed to load data from GitHub API.<br>
-                        Please check if your GitHub Repository is Public.
+                        Failed to load data from QNC Server.<br>
+                        Please wait for QNC Server become public.
                     </div>`;
             }
         }
